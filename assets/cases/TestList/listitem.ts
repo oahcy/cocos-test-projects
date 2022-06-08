@@ -22,9 +22,15 @@ export class ListItem extends Component {
             this.label = this.node.getComponentInChildren(Label) as Label;
         }
         this.updateItem(this.index,SceneList.sceneArray[this.index]);
+
+        this.node.on(Node.EventType.MOUSE_ENTER, (event: MouseEvent) => {
+            BackButton.focusButtonIndex = this.node.getSiblingIndex();
+            BackButton.isControllerMode = false;
+        });
     }
 
     public loadScene() {
+        BackButton.focusButtonIndex = this.node.getSiblingIndex();
         BackButton.saveOffset();
         BackButton.saveIndex(this.index);
         director.loadScene(this._name);

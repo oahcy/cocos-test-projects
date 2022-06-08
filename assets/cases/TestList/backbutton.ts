@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, ScrollView, Vec3, Layout, game, Label, director, Director, assetManager, find, Canvas, Layers, CCString, CCInteger, resources, JsonAsset, profiler, CCBoolean } from "cc";
+import { input, Input, KeyCode, _decorator, Component, Node, ScrollView, Vec3, Layout, game, Label, director, Director, assetManager, find, Canvas, Layers, CCString, CCInteger, resources, JsonAsset, profiler, CCBoolean, EventKeyboard } from "cc";
 const { ccclass, property } = _decorator;
 import { SceneList } from "./scenelist";
 import { ReceivedCode, StateCode, TestFramework } from "./TestFramework";
@@ -25,6 +25,9 @@ export class BackButton extends Component {
     private static _nextNode : Node;
     private sceneName! : Label;
 
+    public static focusButtonIndex : number = 0;
+    public static isControllerMode : boolean = false;
+
     @property(JsonAsset)
     public autoTestConfig: AutoTestConfigJson | null = null;
 
@@ -49,6 +52,20 @@ export class BackButton extends Component {
             const firstIndexFold= str.indexOf('/cases/') + 7;
             const lastIndexFolf = str.indexOf('/',firstIndexFold);
             SceneList.sceneFold.push(str.substring(firstIndexFold, lastIndexFolf));
+        }
+    }
+
+    onLoad() {
+        input.on(Input.EventType.KEY_DOWN, this.keyDown, this);
+    }
+
+    keyDown(event : EventKeyboard) {
+        if (event.keyCode == KeyCode.KEY_B) {
+            this.backToList();
+        } else if (event.keyCode == KeyCode.ARROW_LEFT) {
+            this.preScene();
+        } else if (event.keyCode == KeyCode.ARROW_RIGHT) {
+            this.nextScene();
         }
     }
 
