@@ -1,4 +1,4 @@
-import { input, Input, KeyCode, _decorator, Component, Node, ScrollView, Vec3, Layout, game, Label, director, Director, assetManager, find, Canvas, Layers, CCString, CCInteger, resources, JsonAsset, profiler, CCBoolean, EventKeyboard } from "cc";
+import { EventGamepad, GamepadCode, input, Input, KeyCode, _decorator, Component, Node, ScrollView, Vec3, Layout, game, Label, director, Director, assetManager, find, Canvas, Layers, CCString, CCInteger, resources, JsonAsset, profiler, CCBoolean, EventKeyboard } from "cc";
 const { ccclass, property } = _decorator;
 import { SceneList } from "./scenelist";
 import { ReceivedCode, StateCode, TestFramework } from "./TestFramework";
@@ -32,6 +32,7 @@ export class BackButton extends Component {
     public autoTestConfig: AutoTestConfigJson | null = null;
 
     private isAutoTesting: boolean = false;
+    private  lastPressTimestamp : number = 0;
 
     __preload() {
         const sceneInfo = assetManager.main!.config.scenes;
@@ -56,15 +57,39 @@ export class BackButton extends Component {
     }
 
     onLoad() {
-        input.on(Input.EventType.KEY_DOWN, this.keyDown, this);
+        input.on(Input.EventType.GAMEPAD_INPUT, this.onGamepadInput, this);
     }
 
-    keyDown(event : EventKeyboard) {
-        if (event.keyCode == KeyCode.KEY_B) {
+    isControllerButtonPress(val : number) : boolean {
+        let ret = !!(val > 0);
+        return ret;
+    }
+
+    onGamepadInput(event : EventGamepad) {
+        const pressSensitiveTime = 250; //ms
+        const axisPrecision = 0.03;
+
+        let currentSence = director.getScene();
+        if (currentSence?.name == "" || (currentSence?.name == "TestList")) {
+            return;
+        }
+        console.log(currentSence);
+        if ((this.lastPressTimestamp != 0) && ((Date.now() - this.lastPressTimestamp) < pressSensitiveTime)) {
+            return;
+        }
+        this.lastPressTimestamp = Date.now();
+
+        const gp = event.gamepad;
+        const ls = gp.leftStick.getValue();
+
+        const isLeft = this.isControllerButtonPress(gp.dpad.left.getValue()) || ls.x > axisPrecision;
+        const isRight = this.isControllerButtonPress(gp.dpad.right.getValue()) || (ls.x < -axisPrecision);
+        const isBack = this.isControllerButtonPress(gp.buttonEast.getValue());
+        if (isBack) {
             this.backToList();
-        } else if (event.keyCode == KeyCode.ARROW_LEFT) {
+        } else if (isLeft) {
             this.preScene();
-        } else if (event.keyCode == KeyCode.ARROW_RIGHT) {
+        } else if (isRight) {
             this.nextScene();
         }
     }
@@ -158,6 +183,7 @@ export class BackButton extends Component {
         for(let i = 0; i < length; i++) {
             SceneList.sceneArray.pop();
         }
+        input.off(Input.EventType.GAMEPAD_INPUT, this.onGamepadInput, this);
     }
 
     switchSceneName () {

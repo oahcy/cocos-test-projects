@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, Sprite, Button, instantiate, input, Input, EventKeyboard, ScrollView, Vec2, KeyCode, UITransform} from "cc";
+import { _decorator, Component, Node, Prefab, Sprite, Button, instantiate, input, Input, math, EventKeyboard,EventGamepad, GamepadCode, ScrollView, Vec2, KeyCode, UITransform} from "cc";
 import { BackButton } from "./backbutton";
 import { ListItem } from "./listitem";
 const { ccclass, property } = _decorator;
@@ -22,6 +22,7 @@ export class SceneManager extends Component {
     public scrollView: ScrollView  = null!;
 
     private  lastFocusIndex : number = -1;
+    private  lastPressTimestamp : number = 0;
 
     onLoad() {
         SceneList.foldCount = 0;
@@ -45,7 +46,11 @@ export class SceneManager extends Component {
             }
         }
 
-        input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
+        input.on(Input.EventType.GAMEPAD_INPUT, this.onGamepadInput, this);
+    }
+
+    onDestroy() {
+        input.off(Input.EventType.GAMEPAD_INPUT, this.onGamepadInput, this);
     }
 
     update(dt: number) {
@@ -87,32 +92,49 @@ export class SceneManager extends Component {
         return !this.getCurrentFoucusNode().getComponent(Button);
     }
 
-    onKeyDown(event: EventKeyboard) {
-        BackButton.isControllerMode = true;
+    isControllerButtonPress(val : number) : boolean {
+        let ret = !!(val > 0);
+        return ret;
+    }
+
+    onGamepadInput(event: EventGamepad) {
+        const gp = event.gamepad;
+        const axisPrecision = 0.03;
+        const pressSensitiveTime = 25; //ms
         
-        if (event.keyCode == KeyCode.ENTER) {
+        if ((this.lastPressTimestamp != 0) && ((Date.now() - this.lastPressTimestamp) < pressSensitiveTime)) {
+            return;
+        }
+        this.lastPressTimestamp = Date.now();
+
+        BackButton.isControllerMode = true;
+
+        const ls = gp.leftStick.getValue();
+        const isUp = this.isControllerButtonPress(gp.dpad.up.getValue()) || ls.y > axisPrecision;
+        const isDown = this.isControllerButtonPress(gp.dpad.down.getValue()) || (ls.y < -axisPrecision);
+        const isEnter = this.isControllerButtonPress(gp.buttonSouth.getValue());
+        if (isEnter) {
             if (!this.isCurrentFocusNodeFold()) {
                 this.getCurrentFoucusNode().getComponent(ListItem)?.loadScene();
             }
             return;
         }
-        if (event.keyCode == KeyCode.ARROW_UP || event.keyCode == KeyCode.ARROW_DOWN) {
-            //nothing
-        } else {
+
+        if (!isUp && !isDown) {
             return;
         }
 
-        if (event.keyCode == KeyCode.ARROW_UP) {
+        if (isUp) {
             this.decFocusIndex();
-        } else if (event.keyCode == KeyCode.ARROW_DOWN) {
+        } else if (isDown) {
             this.addFocusIndex();
         }
 
         //skip fold
         while (this.isCurrentFocusNodeFold()) {
-            if (event.keyCode == KeyCode.ARROW_UP) {
+            if (isUp) {
                 this.decFocusIndex();
-            } else if (event.keyCode == KeyCode.ARROW_DOWN) {
+            } else if (isDown) {
                 this.addFocusIndex();
             }
         }
