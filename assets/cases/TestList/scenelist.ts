@@ -120,21 +120,20 @@ export class SceneManager extends Component {
             return;
         }
 
-        if (!isUp && !isDown) {
-            return;
-        }
 
         if (isUp) {
             this.decFocusIndex();
         } else if (isDown) {
             this.addFocusIndex();
+        } else {
+            return;
         }
 
         //skip fold
         while (this.isCurrentFocusNodeFold()) {
             if (isUp) {
                 this.decFocusIndex();
-            } else if (isDown) {
+            } else {
                 this.addFocusIndex();
             }
         }
