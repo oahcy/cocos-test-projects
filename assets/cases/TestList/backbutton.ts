@@ -73,7 +73,6 @@ export class BackButton extends Component {
         if (currentSence?.name == "" || (currentSence?.name == "TestList")) {
             return;
         }
-        console.log(currentSence);
         if ((this.lastPressTimestamp != 0) && ((Date.now() - this.lastPressTimestamp) < pressSensitiveTime)) {
             return;
         }
